@@ -4,6 +4,9 @@ from supabase_client import supabase  # your initialized Supabase client
 
 app = FastAPI()
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 # --- MODELS ---
 class UserCreate(BaseModel):
@@ -65,6 +68,27 @@ def give_reward(reward: RewardCreate):
             "reward_name": reward.reward_name
         }).execute()
         return res.data[0]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Add this route at the bottom
+@app.post("/login")
+def login_user(login: LoginRequest):
+    try:
+        # This asks Supabase: "Find the user where the name matches the email"
+        res = supabase.table("users").select("*").eq("name", login.email).execute()
+        
+        if not res.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user = res.data[0]
+        
+        # Simple text check (since we aren't hashing yet)
+        if user.get("password") == login.password:
+            return user
+        else:
+            raise HTTPException(status_code=401, detail="Invalid password")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
