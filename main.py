@@ -4,6 +4,12 @@ from supabase_client import supabase
 
 app = FastAPI()
 
+# --- ADD THIS PART ---
+@app.get("/")
+def root():
+    return {"message": "Star Rise API: Auth Online"}
+# ---------------------
+
 # --- MODELS ---
 class LoginRequest(BaseModel):
     username: str
