@@ -4,12 +4,6 @@ from supabase_client import supabase
 
 app = FastAPI()
 
-# --- ADD THIS PART ---
-@app.get("/")
-def root():
-    return {"message": "Star Rise API: Auth Online"}
-# ---------------------
-
 # --- MODELS ---
 class LoginRequest(BaseModel):
     username: str
@@ -22,10 +16,12 @@ class UserCreate(BaseModel):
     password: str
     role: str = "student"
 
-class ProgressCreate(BaseModel):
+# UPGRADED: To match your Android ProgressManager
+class ProgressUpdate(BaseModel):
     user_id: str
-    letter: str
-    completed: bool = True
+    category: str      # 'letter', 'quiz1', 'quiz2', 'quiz3'
+    item_index: int    # The letter index or question index
+    stars_earned: int
 
 # --- ROUTES ---
 @app.get("/")
@@ -59,4 +55,21 @@ def login_user(login: LoginRequest):
         else:
             raise HTTPException(status_code=401, detail="Invalid password")
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# NEW: The door for your Android app to sync progress
+@app.post("/update_progress")
+def update_progress(data: ProgressUpdate):
+    try:
+        # Upsert ensures we don't get duplicates for the same letter/quiz
+        res = supabase.table("progress").upsert({
+            "user_id": data.user_id,
+            "category": data.category,
+            "item_index": data.item_index,
+            "stars_earned": data.stars_earned,
+            "updated_at": "now()"
+        }).execute()
+        return {"status": "success", "data": res.data}
+    except Exception as e:
+        print(f"Sync Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
