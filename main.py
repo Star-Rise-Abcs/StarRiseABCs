@@ -23,6 +23,10 @@ class ProgressUpdate(BaseModel):
     item_index: int    # The letter index or question index
     stars_earned: int
 
+class ClassUpdate(BaseModel):
+    user_id: str
+    class_code: str
+
 # --- ROUTES ---
 @app.get("/")
 def root():
@@ -73,3 +77,16 @@ def update_progress(data: ProgressUpdate):
     except Exception as e:
         print(f"Sync Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/update_class")
+async fun update_user_class(data: ClassUpdate):
+    try:
+        # This updates the 'class_code' column for the user with the matching ID
+        response = supabase.table("users") \
+            .update({"class_code": data.class_code}) \
+            .eq("id", data.user_id) \
+            .execute()
+            
+        return {"status": "success", "message": "Class updated"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
