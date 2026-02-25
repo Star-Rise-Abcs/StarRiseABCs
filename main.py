@@ -27,6 +27,12 @@ class ClassUpdate(BaseModel):
     user_id: str
     class_code: str
 
+class RewardOption(BaseModel):
+    class_code: str
+    reward_name: str
+    stars_required: int
+    icon_type: str
+
 # --- ROUTES ---
 @app.get("/")
 def root():
@@ -88,4 +94,13 @@ async def update_class(data: ClassUpdate):  # Changed 'fun' to 'def'
         return {"status": "success", "data": res.data}
     except Exception as e:
         print(f"Class Update Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/get_class_rewards/{class_code}")
+async def get_class_rewards(class_code: str):
+    try:
+        # We query the reward_options table filtering by the student's class
+        res = supabase.table("reward_options").select("*").eq("class_code", class_code).execute()
+        return res.data
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
