@@ -79,14 +79,13 @@ def update_progress(data: ProgressUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/update_class")
-async fun update_user_class(data: ClassUpdate):
+async def update_class(data: ClassUpdate):  # Changed 'fun' to 'def'
     try:
-        # This updates the 'class_code' column for the user with the matching ID
-        response = supabase.table("users") \
-            .update({"class_code": data.class_code}) \
-            .eq("id", data.user_id) \
-            .execute()
-            
-        return {"status": "success", "message": "Class updated"}
+        res = supabase.table("users").update({
+            "class_code": data.class_code
+        }).eq("id", data.user_id).execute()
+        
+        return {"status": "success", "data": res.data}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        print(f"Class Update Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
