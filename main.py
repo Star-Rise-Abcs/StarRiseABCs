@@ -104,3 +104,8 @@ async def get_class_rewards(class_code: str):
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/get_user_progress/{user_id}")
+def get_user_progress(user_id: str):
+    response = supabase.table("progress").select("*").eq("user_id", user_id).execute()
+    return response.data
