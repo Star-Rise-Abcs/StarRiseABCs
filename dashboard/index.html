@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Rise - Teacher Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Lato", sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background: #f4f7f6;
+            overflow: hidden;
+        }
+
+        /* --- Auth Overlay --- */
+        .auth {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #147c25;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .auth-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .auth-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .auth-box button {
+            width: 100%;
+            padding: 12px;
+            background: #147c25;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 90px;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+
+        .sidebar-logo {
+            font-weight: bold;
+            color: #2fa84f;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+
+        .nav-icon {
+            padding: 20px 0;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            font-size: 11px;
+            opacity: 0.6;
+            transition: 0.3s;
+        }
+
+        .nav-icon:hover {
+            opacity: 1;
+            background: #262626;
+        }
+
+        .nav-icon.active {
+            opacity: 1;
+            border-left: 4px solid #2fa84f;
+            background: #262626;
+        }
+
+        /* --- Main Content Area --- */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .toggle-group {
+            display: flex;
+            background: #eee;
+            padding: 5px;
+            border-radius: 8px;
+            gap: 5px;
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: #147c25;
+        }
+
+        /* --- Dashboard Grid --- */
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .class-card {
+            background: white;
+            padding: 30px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
+        }
+
+        .class-card:hover {
+            border-color: #147c25;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- BUTTONS: Enter (The Pretty One) & Delete --- */
+        .btn-enter {
+            margin-top: 10px;
+            padding: 10px 24px;
+            background: #147c25;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-enter:hover {
+            background: #1a1a1a;
+            transform: scale(1.05);
+        }
+
+        .btn-delete-class {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #fee2e2;
+            color: #ef4444;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            opacity: 0;
+        }
+
+        .class-card:hover .btn-delete-class {
+            opacity: 1;
+        }
+
+        .btn-delete-class:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* --- Tables and Cards --- */
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 2px solid #eee;
+            color: #666;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* --- Search bar --- */
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .search-bar-main {
+            flex: 1;
+            padding: 12px;
+            border-radius: 25px;
+            border: 1px solid #ddd;
+            text-indent: 10px;
+            outline: none;
+        }
+
+        .btn-update {
+            padding: 8px 12px;
+            background: #147c25;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-update:hover {
+            background: #0e5a1b;
+        }
+
+        /* --- Utilities --- */
+        .star-pill {
+            background: #f0f7ff;
+            color: rgb(81, 202, 0);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            border: 1px solid #d0e7ff;
+            display: inline-block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .reward-edit-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .reward-edit-row label {
+            width: 100px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        .reward-edit-row input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        /* Container for the logo */
+        .sidebar-logo {
+            width: 100%;
+            padding: 20px 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* The actual logo image */
+        .nav-logo {
+            max-width: 100px;
+            /* Adjust this based on your logo's shape */
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.2));
+            /* Optional: gives it a slight lift */
+        }
+
+        /* Adjust sidebar width if your logo looks too squished */
+        .sidebar {
+            width: 100px;
+            /* Bumped up slightly from 90px for better breathing room */
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #newClassCode,
+        #globalSearch {
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="auth" id="authScreen">
+        <div class="auth-box">
+            <img src="logo.png" alt="Star Rise Logo" style="width: 100px; margin-bottom: 20px;">
+            <h2>Star Rise ABCs</h2>
+
+            <div id="login-view">
+                <p style="margin-bottom: 15px; font-size: 14px; color: #666;">Teacher Login</p>
+                <input type="text" id="loginUser" placeholder="Username">
+                <input type="password" id="loginPass" placeholder="Password">
+                <button onclick="handleLogin()">Login</button>
+                <p style="margin-top:15px; font-size:12px;">New teacher? <a href="#" onclick="toggleAuth(true)"
+                        style="color:#147c25; font-weight:bold;">Register Here</a></p>
+            </div>
+
+            <div id="register-view" class="hidden">
+                <p style="margin-bottom: 15px; font-size: 14px; color: #666;">Teacher Registration</p>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="regFirst" placeholder="First Name">
+                    <input type="text" id="regLast" placeholder="Last Name">
+                </div>
+                <input type="text" id="regUser" placeholder="Choose Username">
+                <input type="password" id="regPass" placeholder="Choose Password">
+                <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
+                <input type="text" id="teacherSecret" placeholder="Enter Teacher Access Code"
+                    style="border: 2px solid #147c25; background: #f0fdf4;">
+
+                <button onclick="handleRegister()" style="background:#1a1a1a;">Create Account</button>
+                <p style="margin-top:15px; font-size:12px;"><a href="#" onclick="toggleAuth(false)"
+                        style="color:#666;">Back to Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="logo.png" alt="Star Rise Logo" class="nav-logo">
+        </div>
+
+        <div class="nav-icon active" id="navDashboard" onclick="backToDashboard()">DASHBOARD</div>
+        <div class="nav-icon" onclick="location.reload()">LOGOUT</div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <button id="btnBack" class="btn-update hidden" onclick="backToDashboard()" style="padding: 8px 15px;">←
+                    Back</button>
+                <h1 id="viewTitle">All Classes</h1>
+            </div>
+
+            <div class="toggle-group" id="classNavTabs" style="display:none;">
+                <button class="toggle-btn active" id="tabProg" onclick="switchTab('progress')">Students</button>
+                <button class="toggle-btn" id="tabRew" onclick="switchTab('rewards')">Rewards</button>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="globalSearch" class="search-bar-main" placeholder="Search students or class codes..."
+                onkeydown="if(event.key==='Enter') doSearch()">
+            <button class="btn-update" onclick="doSearch()"
+                style="padding: 0 25px; border-radius: 25px; font-weight: bold;">GO</button>
+        </div>
+
+        <div id="view-all-classes">
+            <div class="card" style="display: flex; gap: 10px; margin-bottom: 25px; align-items: center;">
+                <input type="text" id="newClassCode" placeholder="New Class Code (e.g. OLFU-2026)"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd; text-transform: uppercase;">
+                <button class="btn-update" onclick="createNewClass()" style="border-radius: 8px;">+ Add Class</button>
+            </div>
+            <div class="class-grid" id="classGrid"></div>
+        </div>
+
+        <div id="search-class-results" class="class-grid" style="margin-bottom: 30px;"></div>
+
+        <div id="view-progress" class="hidden">
+            <div id="enrollmentBox" class="card hidden" style="background: #f8f9fa; border: 1px solid #ddd;">
+                <h4 style="margin-bottom: 10px; color: #333;">Enroll Existing Student</h4>
+                <p style="font-size: 11px; color: #666; margin-bottom: 10px;">Search for students registered via the app
+                    to add them to this class.</p>
+
+                <div style="position: relative;">
+                    <input type="text" id="masterStudentSearch" placeholder="Search by name or username..."
+                        oninput="searchMasterStudents()"
+                        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+
+                    <div id="masterStudentResults" class="hidden"
+                        style="position: absolute; z-index: 100; left: 0; right: 0; background: white; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; border-radius: 0 0 6px 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>ABC Progress</th>
+                            <th>Quiz 1</th>
+                            <th>Quiz 2</th>
+                            <th>Quiz 3</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-rewards" class="hidden">
+            <div class="card">
+                <h3>Reward Settings</h3>
+                <p style="color:#666; margin-bottom:20px;">Changes here update the student app immediately.</p>
+                <div id="reward-editor-list"></div>
+                <p style="margin-top:20px; font-size:12px; color:#888;">
+                    Last Sync: <span id="last-update">Never</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
