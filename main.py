@@ -218,13 +218,16 @@ def get_class_report(class_code: str):
     report = []
     for u in users.data:
         u_p = [p for p in progress.data if p['user_id'] == u['id']]
+
         report.append({
             "name": f"{u['first_name']} {u['last_name']}",
-            "abc": len([p for p in u_p if p['category'] == 'letter']),
-            "sing_along": sum([p['stars_earned'] for p in u_p if p['category'] == 'video']),
-            "quiz1": len([p for p in u_p if p['category'] == 'quiz1']),
-            "quiz2": len([p for p in u_p if p['category'] == 'quiz2']),
-            "quiz3": len([p for p in u_p if p['category'] == 'quiz3'])
+            "abc": len([p for p in u_p if p['category'] == 'letter' and p.get('stars_earned', 0) > 0]),
+
+            "sing_along": len([p for p in u_p if p['category'] == 'sing_along' and p.get('stars_earned', 0) > 0]),
+
+            "quiz1": len([p for p in u_p if p['category'] == 'quiz1' and p.get('stars_earned', 0) > 0]),
+            "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
+            "quiz3": len([p for p in u_p if p['category'] == 'quiz3' and p.get('stars_earned', 0) > 0])
         })
     return report
 
@@ -272,10 +275,8 @@ async def search_all_students(query: str):
             "student_count": all_student_codes.count(code)
         })
 
-    # --- PROGRESS LOOP FIX ---
     matched_students = []
     for u in student_res.data:
-        # Get all categories for this student in one query
         u_p_res = supabase.table("progress").select(
             "*").eq("user_id", u['id']).execute()
         u_p = u_p_res.data if u_p_res.data else []
@@ -284,7 +285,6 @@ async def search_all_students(query: str):
             "name": f"{u['first_name']} {u['last_name']}",
             "class_code": u.get("class_code", "NONE"),
             "abc": len([p for p in u_p if p.get('category') == 'letter' and p.get('stars_earned', 0) > 0]),
-            # Use 'sing_along' to match your database exactly
             "sing_along": len([p for p in u_p if p.get('category') == 'sing_along' and p.get('stars_earned', 0) > 0]),
             "quiz1": len([p for p in u_p if p.get('category') == 'quiz1' and p.get('stars_earned', 0) > 0]),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
