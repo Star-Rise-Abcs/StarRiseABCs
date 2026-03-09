@@ -248,7 +248,7 @@ async function loadClassRewards(classCode) {
 
     const defaultStars = {
         'abc': 26,
-        'Video': 1,
+        'video': 1,
         'quiz1': 10,
         'quiz2': 10,
         'quiz3': 10

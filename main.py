@@ -196,15 +196,13 @@ async def create_class(payload: dict):
             status_code=400, detail="Class code cannot be empty.")
 
     try:
-        # 1. Create the class record
+
         supabase.table("classes").insert({
             "class_code": class_code,
             "teacher_id": user_id,
             "creator_name": creator_name
         }).execute()
 
-        # 2. Create the "Functional Defaults" (Names are empty, Stars are set)
-        # This ensures the Android app works the second the class is created.
         default_items = [
             {"class_code": class_code, "reward_name": "",
                 "stars_required": 26, "icon_type": "abc"},
@@ -252,8 +250,7 @@ def get_class_report(class_code: str):
 
         report.append({
             "name": f"{u['first_name']} {u['last_name']}",
-            "abc": len([p for p in u_p if p['category'] == 'letter' and p.get('stars_earned', 0) > 0]),
-
+            "abc": len([p for p in u_p if p['category'] == 'abc' and p.get('stars_earned', 0) > 0]),
             "sing_along": len([p for p in u_p if p.get('category') == 'video' and p.get('stars_earned', 0) > 0]),
             "quiz1": len([p for p in u_p if p['category'] == 'quiz1' and p.get('stars_earned', 0) > 0]),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
@@ -314,8 +311,8 @@ async def search_all_students(query: str):
         matched_students.append({
             "name": f"{u['first_name']} {u['last_name']}",
             "class_code": u.get("class_code", "NONE"),
-            "abc": len([p for p in u_p if p.get('category') == 'letter' and p.get('stars_earned', 0) > 0]),
-            "video": len([p for p in u_p if p.get('category') == 'video' and p.get('stars_earned', 0) > 0]),
+            "abc": len([p for p in u_p if p.get('category') == 'abc' and p.get('stars_earned', 0) > 0]),
+            "sing_along": len([p for p in u_p if p.get('category') == 'video' and p.get('stars_earned', 0) > 0]),
             "quiz1": len([p for p in u_p if p.get('category') == 'quiz1' and p.get('stars_earned', 0) > 0]),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
             "quiz3": len([p for p in u_p if p.get('category') == 'quiz3' and p.get('stars_earned', 0) > 0])
