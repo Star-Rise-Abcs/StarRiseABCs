@@ -260,15 +260,15 @@ async function loadClassRewards(classCode) {
             stars_required: defaultStars[act]
         };
 
-        const displayStars = cur.stars_required > 0 ? cur.stars_required : defaultStars[act];
+        const displayStars = (cur && cur.stars_required !== undefined) ? cur.stars_required : defaultStars[act];
 
         container.innerHTML += `
-            <div class="reward-edit-row" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                <label style="width: 120px; font-weight: bold;">${act.toUpperCase().replace('_', ' ')}</label>
-                <input type="text" id="name-${act}" value="${cur.reward_name}" placeholder="Reward Name">
-                <input type="number" id="stars-${act}" value="${displayStars}" style="width: 80px;">
-                <button class="btn-update" onclick="saveRewardEdit('${act}')" style="background: #147c25; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Update</button>
-            </div>`;
+        <div class="reward-edit-row" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+        <label style="width: 120px; font-weight: bold;">${act.toUpperCase().replace('_', ' ')}</label>
+        <input type="text" id="name-${act}" value="${cur.reward_name || ''}" placeholder="Reward Name">
+        <input type="number" id="stars-${act}" value="${displayStars}" style="width: 80px;">
+        <button class="btn-update" onclick="saveRewardEdit('${act}')" ...>Update</button>
+        </div>`;
     });
 }
 
