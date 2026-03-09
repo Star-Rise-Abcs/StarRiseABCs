@@ -19,7 +19,7 @@ async function handleLogin() {
         if (loginData.role !== 'teacher') {
             alert("Access Denied: Students must use the mobile app, not the dashboard.");
             console.warn("Unauthorized login attempt by student:", u);
-            return; // STOP right here
+            return;
         }
 
 
@@ -169,6 +169,7 @@ function renderStudentTable(students, rewards) {
                     ${u.name}${showClass}
                 </td>
                 <td><span class="star-pill">${u.abc} / 26 Stars</span></td>
+                <td><span class="star-pill" style="background: #ffeb3b; color: #856404;">${u.sing_along || 0} Song Stars</span></td>
                 <td><span class="star-pill">${u.quiz1} Stars</span></td>
                 <td><span class="star-pill">${u.quiz2} Stars</span></td>
                 <td><span class="star-pill">${u.quiz3} Stars</span></td>
