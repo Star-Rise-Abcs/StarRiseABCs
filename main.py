@@ -196,25 +196,40 @@ async def create_class(payload: dict):
             status_code=400, detail="Class code cannot be empty.")
 
     try:
+        # 1. Create the class record
         supabase.table("classes").insert({
             "class_code": class_code,
             "teacher_id": user_id,
             "creator_name": creator_name
         }).execute()
 
-        supabase.table("reward_options").upsert({
-            "class_code": class_code,
-            "reward_name": "ABC Reward",
-            "stars_required": 26,
-            "icon_type": "abc"
-        }, on_conflict="class_code,icon_type").execute()
+        # 2. Create the "Functional Defaults" (Names are empty, Stars are set)
+        # This ensures the Android app works the second the class is created.
+        default_items = [
+            {"class_code": class_code, "reward_name": "",
+                "stars_required": 26, "icon_type": "abc"},
+            {"class_code": class_code, "reward_name": "",
+                "stars_required": 1,  "icon_type": "video"},
+            {"class_code": class_code, "reward_name": "",
+                "stars_required": 10, "icon_type": "quiz1"},
+            {"class_code": class_code, "reward_name": "",
+                "stars_required": 10, "icon_type": "quiz2"},
+            {"class_code": class_code, "reward_name": "",
+                "stars_required": 10, "icon_type": "quiz3"}
+        ]
+
+        supabase.table("reward_options").upsert(
+            default_items,
+            on_conflict="class_code,icon_type"
+        ).execute()
+
         return {"status": "success"}
+
     except Exception as e:
         if "23505" in str(e):
             raise HTTPException(
                 status_code=400, detail=f"The class code '{class_code}' is already taken.")
-        raise HTTPException(
-            status_code=500, detail="An unexpected error occurred.")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/get_class_report/{class_code}")
@@ -300,7 +315,7 @@ async def search_all_students(query: str):
             "name": f"{u['first_name']} {u['last_name']}",
             "class_code": u.get("class_code", "NONE"),
             "abc": len([p for p in u_p if p.get('category') == 'letter' and p.get('stars_earned', 0) > 0]),
-            "sing_along": len([p for p in u_p if p.get('category') == 'sing_along' and p.get('stars_earned', 0) > 0]),
+            "video": len([p for p in u_p if p.get('category') == 'video' and p.get('stars_earned', 0) > 0]),
             "quiz1": len([p for p in u_p if p.get('category') == 'quiz1' and p.get('stars_earned', 0) > 0]),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
             "quiz3": len([p for p in u_p if p.get('category') == 'quiz3' and p.get('stars_earned', 0) > 0])

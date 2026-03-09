@@ -244,10 +244,10 @@ async function loadClassRewards(classCode) {
     const container = document.getElementById('reward-editor-list');
     container.innerHTML = "";
 
-    const categories = ['letter', 'video', 'quiz1', 'quiz2', 'quiz3'];
+    const categories = ['abc', 'video', 'quiz1', 'quiz2', 'quiz3'];
 
     const defaultStars = {
-        'letter': 26,
+        'abc': 26,
         'Video': 1,
         'quiz1': 10,
         'quiz2': 10,
