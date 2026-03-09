@@ -285,7 +285,7 @@ async def search_all_students(query: str):
             "class_code": u.get("class_code", "NONE"),
             "abc": len([p for p in u_p if p.get('category') == 'letter']),
             # Using 'video' as discussed to match your reward settings
-            "sing_along": sum([p.get('stars_earned', 0) for p in u_p if p.get('category') == 'video']),
+            "sing_along": len([p for p in u_p if p.get('category') == 'sing_along' and p.get('stars_earned', 0) > 0]),
             "quiz1": len([p for p in u_p if p.get('category') == 'quiz1']),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2']),
             "quiz3": len([p for p in u_p if p.get('category') == 'quiz3'])

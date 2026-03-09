@@ -168,11 +168,12 @@ function renderStudentTable(students, rewards) {
                 <td style="font-weight: bold; color: #147c25;">
                     ${u.name}${showClass}
                 </td>
+                // Inside renderStudentTable in script.js
                 <td><span class="star-pill">${u.abc} / 26 Stars</span></td>
-                <td><span class="star-pill" style="background: #ffeb3b; color: #856404;">${u.sing_along || 0} Song Stars</span></td>
-                <td><span class="star-pill">${u.quiz1} Stars</span></td>
-                <td><span class="star-pill">${u.quiz2} Stars</span></td>
-                <td><span class="star-pill">${u.quiz3} Stars</span></td>
+                <td><span class="star-pill" style="background: #ffeb3b; color: #856404;">${u.sing_along} / 10 Stars</span></td>
+                <td><span class="star-pill">${u.quiz1} / 10 Stars</span></td>
+                <td><span class="star-pill">${u.quiz2} / 10 Stars</span></td>
+                <td><span class="star-pill">${u.quiz3} / 10 Stars</span></td>
             </tr>
         `;
     }).join('');
