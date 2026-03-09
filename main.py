@@ -61,34 +61,46 @@ def root():
 @app.post("/login")
 def login_user(login: LoginRequest):
     try:
+        clean_username = login.username.strip().lower()
+
         res = supabase.table("users").select(
-            "*").eq("username", login.username).execute()
+            "*").eq("username", clean_username).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="User not found")
 
         user = res.data[0]
         if user.get("password") == login.password:
-            return user
+            return {k: v for k, v in user.items() if k != 'password'}
         else:
             raise HTTPException(status_code=401, detail="Invalid password")
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# --- ANDROID APP SPECIFIC ROUTES ---
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.post("/users")
 def create_user(user: UserCreate):
     try:
+        # Save usernames as lowercase so login always works
+        clean_username = user.username.strip().lower()
+
         res = supabase.table("users").insert({
-            "username": user.username,
+            "username": clean_username,
             "password": user.password,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": user.role
+            "first_name": user.first_name.strip(),
+            "last_name": user.last_name.strip(),
+            "role": user.role.lower()  # ensure "student" is lowercase
         }).execute()
+
+        if not res.data:
+            raise Exception("Failed to create user.")
+
         return res.data[0]
     except Exception as e:
+        if "23505" in str(e):
+            raise HTTPException(
+                status_code=400, detail="Username already taken.")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -117,8 +129,11 @@ def get_user_progress(user_id: str):
 @app.post("/update_class")
 async def update_class_from_app(data: ClassUpdate):
     try:
+        # Ensure class code is saved as UPPERCASE from the app
+        clean_code = data.class_code.strip().upper()
+
         res = supabase.table("users").update({
-            "class_code": data.class_code
+            "class_code": clean_code
         }).eq("id", data.user_id).execute()
         return {"status": "success", "data": res.data}
     except Exception as e:
@@ -206,10 +221,8 @@ async def create_class(payload: dict):
 
 @app.get("/get_class_report/{class_code}")
 def get_class_report(class_code: str):
-    # 1. Normalize the input to Uppercase so '3y2-4' and '3Y2-4' both work
     normalized_code = class_code.strip().upper()
 
-    # 2. Query using the normalized code
     users = supabase.table("users").select("*") \
         .eq("class_code", normalized_code) \
         .eq("role", "student").execute()
