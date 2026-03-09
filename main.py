@@ -246,15 +246,17 @@ def get_class_report(class_code: str):
 
     report = []
     for u in users.data:
-        u_p = [p for p in progress.data if p['user_id'] == u['id']]
+        current_user_id = str(u['id'])
+        u_p = [p for p in progress.data if str(
+            p.get('user_id')) == current_user_id]
 
         report.append({
             "name": f"{u['first_name']} {u['last_name']}",
-            "abc": len([p for p in u_p if p['category'] in ['abc', 'letter'] and p.get('stars_earned', 0) > 0]),
-            "sing_along": len([p for p in u_p if p.get('category') == 'video' and p.get('stars_earned', 0) > 0]),
-            "quiz1": len([p for p in u_p if p['category'] == 'quiz1' and p.get('stars_earned', 0) > 0]),
-            "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
-            "quiz3": len([p for p in u_p if p['category'] == 'quiz3' and p.get('stars_earned', 0) > 0])
+            "abc": len([p for p in u_p if str(p.get('category')).strip().lower() in ['abc', 'letter']]),
+            "sing_along": len([p for p in u_p if p.get('category') == 'video']),
+            "quiz1": len([p for p in u_p if p.get('category') == 'quiz1']),
+            "quiz2": len([p for p in u_p if p.get('category') == 'quiz2']),
+            "quiz3": len([p for p in u_p if p.get('category') == 'quiz3']),
         })
     return report
 
