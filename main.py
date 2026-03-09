@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from supabase_client import supabase
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+import bcrypt
 
 app = FastAPI()
 
@@ -50,6 +51,17 @@ class RewardOption(BaseModel):
     stars_required: int
     icon_type: str
 
+
+def hash_password(password: str) -> str:
+    """Scrambles the password into a secure hash."""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Checks if the typed password matches the scrambled hash."""
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
 # --- SHARED ROUTES  ---
 
 
@@ -84,9 +96,11 @@ def create_user(user: UserCreate):
     try:
         clean_username = user.username.strip().lower()
 
+        secure_password = hash_password(user.password)
+
         res = supabase.table("users").insert({
             "username": clean_username,
-            "password": user.password,
+            "password": secure_password,
             "first_name": user.first_name.strip(),
             "last_name": user.last_name.strip(),
             "role": user.role.lower()
@@ -152,11 +166,13 @@ async def register_teacher(data: dict):
     if existing.data:
         raise HTTPException(status_code=400, detail="Username already taken")
 
+    secure_password = hash_password(data['password'])
+
     new_user = {
         "first_name": data['first_name'],
         "last_name": data['last_name'],
         "username": data['username'],
-        "password": data['password'],
+        "password": secure_password,
         "role": "teacher"
     }
     try:
