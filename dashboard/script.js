@@ -168,16 +168,16 @@ function renderStudentTable(students, rewards) {
                 <td style="font-weight: bold; color: #147c25;">
                     ${u.name}${showClass}
                 </td>
-                // Inside renderStudentTable in script.js
-                <td><span class="star-pill">${u.abc} / 26 Stars</span></td>
-                <td><span class="star-pill" style="background: #ffeb3b; color: #856404;">${u.sing_along} / 10 Stars</span></td>
-                <td><span class="star-pill">${u.quiz1} / 10 Stars</span></td>
-                <td><span class="star-pill">${u.quiz2} / 10 Stars</span></td>
-                <td><span class="star-pill">${u.quiz3} / 10 Stars</span></td>
+                <td><span class="star-pill">${u.abc || 0} / 26 Stars</span></td>
+                <td><span class="star-pill">${u.sing_along || 0} / 1 Stars</span></td>                
+                <td><span class="star-pill">${u.quiz1 || 0} / 10 Stars</span></td>
+                <td><span class="star-pill">${u.quiz2 || 0} / 10 Stars</span></td>
+                <td><span class="star-pill">${u.quiz3 || 0} / 10 Stars</span></td>
             </tr>
         `;
     }).join('');
 }
+
 async function doSearch() {
     const query = document.getElementById("globalSearch").value.trim();
     if (!query) return backToDashboard();
@@ -243,14 +243,31 @@ async function loadClassRewards(classCode) {
     const rewards = await res.json();
     const container = document.getElementById('reward-editor-list');
     container.innerHTML = "";
-    ['abc', 'video', 'quiz1', 'quiz2', 'quiz3'].forEach(act => {
-        const cur = rewards.find(r => r.icon_type === act) || { reward_name: "None", stars_required: 0 };
+
+    const categories = ['letter', 'sing_along', 'quiz1', 'quiz2', 'quiz3'];
+
+    const defaultStars = {
+        'letter': 26,
+        'sing_along': 1,
+        'quiz1': 10,
+        'quiz2': 10,
+        'quiz3': 10
+    };
+
+    categories.forEach(act => {
+        const cur = rewards.find(r => r.icon_type === act) || {
+            reward_name: "None",
+            stars_required: defaultStars[act]
+        };
+
+        const displayStars = cur.stars_required > 0 ? cur.stars_required : defaultStars[act];
+
         container.innerHTML += `
-            <div class="reward-edit-row">
-                <label>${act.toUpperCase()}</label>
-                <input type="text" id="name-${act}" value="${cur.reward_name}">
-                <input type="number" id="stars-${act}" value="${cur.stars_required}" style="width: 80px;">
-                <button class="btn-update" onclick="saveRewardEdit('${act}')">Update</button>
+            <div class="reward-edit-row" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                <label style="width: 120px; font-weight: bold;">${act.toUpperCase().replace('_', ' ')}</label>
+                <input type="text" id="name-${act}" value="${cur.reward_name}" placeholder="Reward Name">
+                <input type="number" id="stars-${act}" value="${displayStars}" style="width: 80px;">
+                <button class="btn-update" onclick="saveRewardEdit('${act}')" style="background: #147c25; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Update</button>
             </div>`;
     });
 }

@@ -283,12 +283,12 @@ async def search_all_students(query: str):
         matched_students.append({
             "name": f"{u['first_name']} {u['last_name']}",
             "class_code": u.get("class_code", "NONE"),
-            "abc": len([p for p in u_p if p.get('category') == 'letter']),
-            # Using 'video' as discussed to match your reward settings
+            "abc": len([p for p in u_p if p.get('category') == 'letter' and p.get('stars_earned', 0) > 0]),
+            # Use 'sing_along' to match your database exactly
             "sing_along": len([p for p in u_p if p.get('category') == 'sing_along' and p.get('stars_earned', 0) > 0]),
-            "quiz1": len([p for p in u_p if p.get('category') == 'quiz1']),
-            "quiz2": len([p for p in u_p if p.get('category') == 'quiz2']),
-            "quiz3": len([p for p in u_p if p.get('category') == 'quiz3'])
+            "quiz1": len([p for p in u_p if p.get('category') == 'quiz1' and p.get('stars_earned', 0) > 0]),
+            "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
+            "quiz3": len([p for p in u_p if p.get('category') == 'quiz3' and p.get('stars_earned', 0) > 0])
         })
 
     return {"matched_students": matched_students, "matched_classes": final_classes}
