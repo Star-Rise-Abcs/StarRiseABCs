@@ -82,7 +82,6 @@ def login_user(login: LoginRequest):
 @app.post("/users")
 def create_user(user: UserCreate):
     try:
-        # Save usernames as lowercase so login always works
         clean_username = user.username.strip().lower()
 
         res = supabase.table("users").insert({
@@ -90,7 +89,7 @@ def create_user(user: UserCreate):
             "password": user.password,
             "first_name": user.first_name.strip(),
             "last_name": user.last_name.strip(),
-            "role": user.role.lower()  # ensure "student" is lowercase
+            "role": user.role.lower()
         }).execute()
 
         if not res.data:
@@ -129,7 +128,6 @@ def get_user_progress(user_id: str):
 @app.post("/update_class")
 async def update_class_from_app(data: ClassUpdate):
     try:
-        # Ensure class code is saved as UPPERCASE from the app
         clean_code = data.class_code.strip().upper()
 
         res = supabase.table("users").update({
@@ -241,8 +239,7 @@ def get_class_report(class_code: str):
             "name": f"{u['first_name']} {u['last_name']}",
             "abc": len([p for p in u_p if p['category'] == 'letter' and p.get('stars_earned', 0) > 0]),
 
-            "sing_along": len([p for p in u_p if p['category'] == 'sing_along' and p.get('stars_earned', 0) > 0]),
-
+            "sing_along": len([p for p in u_p if p.get('category') == 'video' and p.get('stars_earned', 0) > 0]),
             "quiz1": len([p for p in u_p if p['category'] == 'quiz1' and p.get('stars_earned', 0) > 0]),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
             "quiz3": len([p for p in u_p if p['category'] == 'quiz3' and p.get('stars_earned', 0) > 0])
