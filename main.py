@@ -77,17 +77,22 @@ def login_user(login: LoginRequest):
 
         res = supabase.table("users").select(
             "*").eq("username", clean_username).execute()
+
         if not res.data:
             raise HTTPException(status_code=404, detail="User not found")
 
         user = res.data[0]
-        if user.get("password") == login.password:
+        hashed_from_db = user.get("password")
+
+        if hashed_from_db and verify_password(login.password, hashed_from_db):
             return {k: v for k, v in user.items() if k != 'password'}
         else:
             raise HTTPException(status_code=401, detail="Invalid password")
+
     except HTTPException as he:
         raise he
     except Exception as e:
+        print(f"CRITICAL LOGIN ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
