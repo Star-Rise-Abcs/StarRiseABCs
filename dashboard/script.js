@@ -273,13 +273,21 @@ async function loadClassRewards(classCode) {
 }
 
 async function saveRewardEdit(act) {
+
     const name = document.getElementById(`name-${act}`).value;
     const stars = document.getElementById(`stars-${act}`).value;
+
     await fetch(`${API_URL}/update_specific_reward`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ class_code: currentSelectedClass, reward_name: name, stars_required: parseInt(stars), icon_type: act })
+        body: JSON.stringify({
+            class_code: currentSelectedClass,
+            reward_name: name,
+            stars_required: parseInt(stars),
+            icon_type: act
+        })
     });
+
     document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
 }
 
