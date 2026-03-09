@@ -250,7 +250,7 @@ def get_class_report(class_code: str):
 
         report.append({
             "name": f"{u['first_name']} {u['last_name']}",
-            "abc": len([p for p in u_p if p['category'] == 'abc' and p.get('stars_earned', 0) > 0]),
+            "abc": len([p for p in u_p if p['category'] in ['abc', 'letter'] and p.get('stars_earned', 0) > 0]),
             "sing_along": len([p for p in u_p if p.get('category') == 'video' and p.get('stars_earned', 0) > 0]),
             "quiz1": len([p for p in u_p if p['category'] == 'quiz1' and p.get('stars_earned', 0) > 0]),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2' and p.get('stars_earned', 0) > 0]),
