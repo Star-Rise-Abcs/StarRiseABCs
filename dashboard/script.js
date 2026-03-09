@@ -5,27 +5,44 @@ let currentSelectedClass = null;
 async function handleLogin() {
     const u = document.getElementById('loginUser').value;
     const p = document.getElementById('loginPass').value;
+
     const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: u, password: p })
     });
+
     if (res.ok) {
-        teacherData = await res.json();
-        // SAVE the teacher's name to use when creating classes
+        const loginData = await res.json();
+
+
+        if (loginData.role !== 'teacher') {
+            alert("Access Denied: Students must use the mobile app, not the dashboard.");
+            console.warn("Unauthorized login attempt by student:", u);
+            return; // STOP right here
+        }
+
+
+        teacherData = loginData;
+
         const fullName = `${teacherData.first_name} ${teacherData.last_name}`;
         localStorage.setItem('teacherDisplayName', fullName);
 
         document.getElementById('authScreen').classList.add('hidden');
         loadAllClasses();
-    } else { alert("Invalid Login"); }
+
+        console.log("Logged in as:", fullName);
+
+    } else {
+        alert("Invalid login credentials.");
+    }
 }
 
 async function loadAllClasses() {
     const res = await fetch(`${API_URL}/get_all_classes`);
     const classes = await res.json();
     renderClassGrid(classes);
-    console.log("Database Response:", classes); // <--- ADD THIS
+    console.log("Database Response:", classes);
 }
 
 function renderClassGrid(classes) {
@@ -69,7 +86,6 @@ async function createNewClass() {
         codeInput.value = "";
         loadAllClasses();
     } else {
-        // This grabs the "Class already exists!" message from the backend
         const errData = await res.json();
         alert(errData.detail || "Failed to create class.");
     }
@@ -78,7 +94,6 @@ async function createNewClass() {
 
 async function deleteClass(classCode) {
     if (confirm(`Delete class ${classCode}?`)) {
-        // Use backticks (`) not single quotes (') here:
         await fetch(`${API_URL}/delete_class/${classCode}`, { method: 'DELETE' });
         loadAllClasses();
     }
@@ -87,23 +102,19 @@ async function deleteClass(classCode) {
 async function enterClass(classCode) {
     currentSelectedClass = classCode.toUpperCase();
 
-    // 1. Hide Search Results and the Main Dashboard
     document.getElementById('search-class-results').classList.add('hidden');
     document.getElementById('search-class-results').innerHTML = "";
     document.getElementById('view-all-classes').classList.add('hidden');
     document.getElementById('globalSearch').value = "";
 
-    // 2. Setup the "Official" Class View
     document.getElementById('view-progress').classList.remove('hidden');
     document.getElementById('btnBack').classList.remove('hidden');
     document.getElementById('classNavTabs').style.display = 'flex';
     document.getElementById('viewTitle').innerText = `Class: ${currentSelectedClass}`;
 
-    // --- ADD THIS LINE HERE ---
     document.getElementById('enrollmentBox').classList.remove('hidden');
     // ----------------------------
 
-    // 3. Fetch fresh, filtered data for just THIS class
     await fetchStudents(currentSelectedClass);
     await loadClassRewards(currentSelectedClass);
 
@@ -113,13 +124,11 @@ async function enterClass(classCode) {
 function backToDashboard() {
     currentSelectedClass = null;
 
-    // Clear and Hide Search Results
     const searchDiv = document.getElementById('search-class-results');
     searchDiv.innerHTML = "";
     searchDiv.classList.add('hidden');
     document.getElementById("globalSearch").value = "";
 
-    // Reset Visibility
     document.getElementById('view-all-classes').classList.remove('hidden');
     document.getElementById('view-progress').classList.add('hidden');
     document.getElementById('view-rewards').classList.add('hidden');
@@ -151,8 +160,6 @@ function renderStudentTable(students, rewards) {
     const studentList = document.getElementById('student-list');
 
     studentList.innerHTML = students.map(u => {
-        // We only show the (CLASS_CODE) if we are in Search Mode 
-        // (i.e., if currentSelectedClass is null)
         const showClass = !currentSelectedClass ?
             `<span style="color: #666; font-size: 0.85em; font-weight: normal;"> (${u.class_code})</span>` : "";
 
@@ -176,19 +183,16 @@ async function doSearch() {
     const res = await fetch(`${API_URL}/search_all_students?query=${encodeURIComponent(query)}`);
     const data = await res.json();
 
-    // 1. You MUST define these variables inside the function
     const classResultsDiv = document.getElementById('search-class-results');
     const viewProgress = document.getElementById('view-progress');
     const viewAllClasses = document.getElementById('view-all-classes');
 
-    // 2. Clear current views and show the "Back" button
     classResultsDiv.innerHTML = "";
     document.getElementById('student-list').innerHTML = "";
     viewAllClasses.classList.add('hidden');
     document.getElementById('classNavTabs').style.display = 'none';
     document.getElementById('btnBack').classList.remove('hidden');
 
-    // 3. Handle No Results
     if (data.matched_classes.length === 0 && data.matched_students.length === 0) {
         document.getElementById('viewTitle').innerText = `No results found for "${query.toUpperCase()}"`;
         viewProgress.classList.add('hidden');
@@ -198,7 +202,6 @@ async function doSearch() {
 
     document.getElementById('viewTitle').innerText = `Search Results: ${query.toUpperCase()}`;
 
-    // 4. Render Class Cards (now using creator_name from the backend)
     if (data.matched_classes.length > 0) {
         classResultsDiv.classList.remove('hidden');
         const addSection = document.querySelector('.add-student-section');
@@ -225,7 +228,6 @@ async function doSearch() {
         classResultsDiv.classList.add('hidden');
     }
 
-    // 5. Render Student Progress table
     if (data.matched_students.length > 0) {
         viewProgress.classList.remove('hidden');
         renderStudentTable(data.matched_students, []);
@@ -288,7 +290,7 @@ async function handleRegister() {
 
     if (res.ok) {
         alert("Registration successful! You can now log in.");
-        toggleAuth(false); // Switch back to login
+        toggleAuth(false);
     } else {
         const err = await res.json();
         alert(err.detail || "Registration failed");
@@ -300,29 +302,25 @@ async function searchMasterStudents() {
     const query = document.getElementById('masterStudentSearch').value.trim().toLowerCase();
     const resultsDiv = document.getElementById('masterStudentResults');
 
-    // 1. Hide if query is too short
+
     if (query.length < 2) {
         resultsDiv.classList.add('hidden');
         resultsDiv.innerHTML = "";
         return;
     }
 
-    // 2. Load the master list from DB if we haven't yet
     if (allStudentsMaster.length === 0) {
         const res = await fetch(`${API_URL}/get_unassigned_students`);
         allStudentsMaster = await res.json();
     }
 
-    // 3. FILTER: The Logic Fix is here
     const filtered = allStudentsMaster.filter(s => {
         const firstName = (s.first_name || "").toLowerCase();
         const lastName = (s.last_name || "").toLowerCase();
         const username = (s.username || "").toLowerCase();
 
-        // Create the combined full name
         const fullName = `${firstName} ${lastName}`;
 
-        // Match against first, last, username, OR the combined full name
         return firstName.includes(query) ||
             lastName.includes(query) ||
             username.includes(query) ||
@@ -336,7 +334,7 @@ async function searchMasterStudents() {
             const isSameClass = s.class_code === currentSelectedClass;
             const currentClassLabel = s.class_code ? s.class_code : "No Class Assigned";
 
-            // Logic for the button vs "Already in" text
+
             const actionUI = isSameClass
                 ? `<span style="color: #147c25; font-size: 11px; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 4px;">Enrolled Here</span>`
                 : `<button onclick="enrollStudent('${s.id}', '${s.first_name} ${s.last_name}', '${s.class_code || ''}')" 
@@ -360,7 +358,6 @@ async function searchMasterStudents() {
 }
 
 async function enrollStudent(studentId, studentName, oldClassCode) {
-    // 1. If they have a class and it's NOT the current one, ask for confirmation
     if (oldClassCode && oldClassCode !== "NONE" && oldClassCode !== "") {
         const confirmMove = confirm(`${studentName} is currently in class [${oldClassCode}]. Do you want to move them to [${currentSelectedClass}]?`);
         if (!confirmMove) return;
@@ -379,7 +376,6 @@ async function enrollStudent(studentId, studentName, oldClassCode) {
         document.getElementById('masterStudentSearch').value = "";
         document.getElementById('masterStudentResults').classList.add('hidden');
 
-        // Clear cache so the next search sees the updated class_code
         allStudentsMaster = [];
 
         await fetchStudents(currentSelectedClass);

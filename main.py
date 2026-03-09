@@ -7,7 +7,7 @@ from typing import Optional
 app = FastAPI()
 
 # --- MIDDLEWARE ---
-# Required for your Teacher Dashboard (GitHub Pages) to talk to Render
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,7 +34,7 @@ class UserCreate(BaseModel):
 
 class ProgressUpdate(BaseModel):
     user_id: str
-    category: str      # 'letter', 'quiz1', 'quiz2', 'quiz3'
+    category: str
     item_index: int
     stars_earned: int
 
@@ -50,7 +50,7 @@ class RewardOption(BaseModel):
     stars_required: int
     icon_type: str
 
-# --- SHARED ROUTES (App & Dashboard) ---
+# --- SHARED ROUTES  ---
 
 
 @app.get("/")
@@ -95,7 +95,6 @@ def create_user(user: UserCreate):
 @app.post("/update_progress")
 def update_progress(data: ProgressUpdate):
     try:
-        # Upsert ensures we don't get duplicates for the same letter/quiz in the student app
         res = supabase.table("progress").upsert({
             "user_id": data.user_id,
             "category": data.category,
@@ -125,8 +124,7 @@ async def update_class_from_app(data: ClassUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- TEACHER DASHBOARD SPECIFIC ROUTES ---
-
+# --- TEACHER DASHBOARD
 TEACHER_ACCESS_CODE = "OLFU_STAR_RISE"
 
 
