@@ -206,8 +206,13 @@ async def create_class(payload: dict):
 
 @app.get("/get_class_report/{class_code}")
 def get_class_report(class_code: str):
-    users = supabase.table("users").select(
-        "*").eq("class_code", class_code).eq("role", "student").execute()
+    # 1. Normalize the input to Uppercase so '3y2-4' and '3Y2-4' both work
+    normalized_code = class_code.strip().upper()
+
+    # 2. Query using the normalized code
+    users = supabase.table("users").select("*") \
+        .eq("class_code", normalized_code) \
+        .eq("role", "student").execute()
     if not users.data:
         return []
 
