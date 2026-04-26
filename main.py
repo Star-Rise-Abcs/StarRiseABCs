@@ -188,16 +188,12 @@ async def register_teacher(data: dict):
 
 
 @app.get("/get_all_classes")
-def get_all_classes(teacher_id: Optional[str] = None):
-    # If a teacher_id is provided, filter the classes table
-    query = supabase.table("classes").select("class_code, creator_name")
-    
-    if teacher_id:
-        query = query.eq("teacher_id", teacher_id)
+def get_all_classes(teacher_id: str): # Forced requirement
+    # We select only classes where teacher_id matches
+    class_res = supabase.table("classes").select("class_code, creator_name") \
+        .eq("teacher_id", teacher_id).execute()
         
-    class_res = query.execute()
-
-    # Get student counts (we only count students in those specific classes)
+    # Get all student class codes to count them
     user_res = supabase.table("users").select("class_code").eq("role", "student").execute()
     student_codes = [r['class_code'] for r in user_res.data if r['class_code']]
 
@@ -210,7 +206,6 @@ def get_all_classes(teacher_id: Optional[str] = None):
             "student_count": student_codes.count(code)
         })
     return sorted(report, key=lambda x: x['class_code'])
-
 @app.post("/create_class")
 async def create_class(payload: dict):
     class_code = payload.get("class_code", "").strip().upper()
