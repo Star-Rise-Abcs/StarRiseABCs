@@ -188,11 +188,17 @@ async def register_teacher(data: dict):
 
 
 @app.get("/get_all_classes")
-def get_all_classes():
-    class_res = supabase.table("classes").select(
-        "class_code, creator_name").execute()
-    user_res = supabase.table("users").select(
-        "class_code").eq("role", "student").execute()
+def get_all_classes(teacher_id: Optional[str] = None):
+    # If a teacher_id is provided, filter the classes table
+    query = supabase.table("classes").select("class_code, creator_name")
+    
+    if teacher_id:
+        query = query.eq("teacher_id", teacher_id)
+        
+    class_res = query.execute()
+
+    # Get student counts (we only count students in those specific classes)
+    user_res = supabase.table("users").select("class_code").eq("role", "student").execute()
     student_codes = [r['class_code'] for r in user_res.data if r['class_code']]
 
     report = []
@@ -204,7 +210,6 @@ def get_all_classes():
             "student_count": student_codes.count(code)
         })
     return sorted(report, key=lambda x: x['class_code'])
-
 
 @app.post("/create_class")
 async def create_class(payload: dict):
@@ -252,69 +257,92 @@ async def create_class(payload: dict):
 
 
 @app.get("/get_class_report/{class_code}")
-def get_class_report(class_code: str):
+def get_class_report(class_code: str, teacher_id: str):
     normalized_code = class_code.strip().upper()
 
+    # --- SECURITY CHECK ---
+    # Verify that the teacher requesting this report is the one who created the class
+    ownership_check = supabase.table("classes").select("*") \
+        .eq("class_code", normalized_code) \
+        .eq("teacher_id", teacher_id).execute()
+
+    if not ownership_check.data:
+        raise HTTPException(
+            status_code=403, 
+            detail="Access Denied: You do not have permission to view this class report."
+        )
+
+    # --- DATA RETRIEVAL ---
+    # Fetch students assigned to this class
     users = supabase.table("users").select("*") \
         .eq("class_code", normalized_code) \
         .eq("role", "student").execute()
+    
     if not users.data:
         return []
 
+    # Get progress for all students in this class
     user_ids = [u['id'] for u in users.data]
-    progress = supabase.table("progress").select(
-        "*").in_("user_id", user_ids).execute()
+    progress = supabase.table("progress").select("*").in_("user_id", user_ids).execute()
 
+    # --- REPORT GENERATION ---
     report = []
     for u in users.data:
         current_user_id = str(u['id'])
-        u_p = [p for p in progress.data if str(
-            p.get('user_id')) == current_user_id]
+        # Filter progress list for just this specific student
+        u_p = [p for p in progress.data if str(p.get('user_id')) == current_user_id]
 
         report.append({
             "name": f"{u['first_name']} {u['last_name']}",
+            # Categorize the star counts
             "abc": len([p for p in u_p if str(p.get('category')).strip().lower() in ['abc', 'letter']]),
             "sing_along": len([p for p in u_p if p.get('category') == 'video']),
             "quiz1": len([p for p in u_p if p.get('category') == 'quiz1']),
             "quiz2": len([p for p in u_p if p.get('category') == 'quiz2']),
             "quiz3": len([p for p in u_p if p.get('category') == 'quiz3']),
         })
+    
     return report
 
 
 @app.get("/search_all_students")
-async def search_all_students(query: str):
+async def search_all_students(query: str, teacher_id: str):
     q_raw = query.strip()
     q_like = f"%{q_raw}%"
     parts = q_raw.split()
 
-    student_query = supabase.table("users").select("*").eq("role", "student")
-    if len(parts) > 1:
-        student_res = student_query.ilike("first_name", f"%{parts[0]}%").ilike(
-            "last_name", f"%{parts[1]}%").execute()
-    else:
-        student_res = student_query.or_(
-            f"first_name.ilike.{q_like},last_name.ilike.{q_like},username.ilike.{q_like}").execute()
+    # 1. GET TEACHER'S CLASSES FIRST
+    # We only care about classes this specific teacher created
+    my_classes_res = supabase.table("classes").select("class_code").eq("teacher_id", teacher_id).execute()
+    my_class_codes = [c['class_code'] for c in my_classes_res.data]
 
-    class_res = supabase.table("classes").select(
-        "*").ilike("class_code", q_like).execute()
+    if not my_class_codes:
+        return {"matched_students": [], "matched_classes": []}
+
+    # 2. SEARCH STUDENTS (But only within the teacher's classes)
+    student_query = supabase.table("users").select("*").eq("role", "student").in_("class_code", my_class_codes)
+    
+    if len(parts) > 1:
+        student_res = student_query.ilike("first_name", f"%{parts[0]}%").ilike("last_name", f"%{parts[1]}%").execute()
+    else:
+        student_res = student_query.or_(f"first_name.ilike.{q_like},last_name.ilike.{q_like},username.ilike.{q_like}").execute()
+
+    # 3. SEARCH CLASSES (But only within the teacher's own classes)
+    class_res = supabase.table("classes").select("*").eq("teacher_id", teacher_id).ilike("class_code", q_like).execute()
     matched_classes_raw = class_res.data
 
-    student_class_codes = list(
-        set([u['class_code'] for u in student_res.data if u.get('class_code')]))
+    # Ensure classes linked to found students are included (if they belong to the teacher)
+    student_class_codes = list(set([u['class_code'] for u in student_res.data if u.get('class_code')]))
     if student_class_codes:
         existing_codes = [c['class_code'] for c in matched_classes_raw]
-        missing_codes = [
-            code for code in student_class_codes if code not in existing_codes]
+        missing_codes = [code for code in student_class_codes if code not in existing_codes]
         if missing_codes:
-            extra = supabase.table("classes").select(
-                "*").in_("class_code", missing_codes).execute()
+            extra = supabase.table("classes").select("*").in_("class_code", missing_codes).execute()
             matched_classes_raw.extend(extra.data)
 
-    all_students_res = supabase.table("users").select(
-        "class_code").eq("role", "student").execute()
-    all_student_codes = [r['class_code']
-                         for r in all_students_res.data if r['class_code']]
+    # 4. GET GLOBAL STUDENT COUNTS (To show how many kids are in each class)
+    all_students_res = supabase.table("users").select("class_code").eq("role", "student").execute()
+    all_student_codes = [r['class_code'] for r in all_students_res.data if r['class_code']]
 
     final_classes = []
     for cls in matched_classes_raw:
@@ -325,10 +353,10 @@ async def search_all_students(query: str):
             "student_count": all_student_codes.count(code)
         })
 
+    # 5. FETCH PROGRESS FOR MATCHED STUDENTS
     matched_students = []
     for u in student_res.data:
-        u_p_res = supabase.table("progress").select(
-            "*").eq("user_id", u['id']).execute()
+        u_p_res = supabase.table("progress").select("*").eq("user_id", u['id']).execute()
         u_p = u_p_res.data if u_p_res.data else []
 
         matched_students.append({
@@ -342,8 +370,7 @@ async def search_all_students(query: str):
         })
 
     return {"matched_students": matched_students, "matched_classes": final_classes}
-
-
+    
 @app.post("/update_specific_reward")
 async def update_specific_reward(data: RewardOption):
     try:
