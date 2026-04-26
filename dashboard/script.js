@@ -422,3 +422,9 @@ async function enrollStudent(studentId, studentName, oldClassCode) {
         alert("Failed to update student enrollment.");
     }
 }
+
+function handleLogout() {
+    localStorage.removeItem('teacherId');
+    localStorage.removeItem('teacherDisplayName');
+    window.location.reload(); 
+}
