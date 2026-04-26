@@ -1,7 +1,14 @@
-const API_URL = "https://starriseabcsapi.onrender.com";
-let teacherData = null;
 let currentSelectedClass = null;
+let teacherData = localStorage.getItem('teacherId') ? { id: localStorage.getItem('teacherId') } : null;
+const API_URL = "https://starriseabcsapi.onrender.com";
 
+window.onload = () => {
+    if (teacherData) {
+        const auth = document.getElementById('authScreen');
+        if (auth) auth.classList.add('hidden');
+        loadAllClasses();
+    }
+};
 async function handleLogin() {
     const u = document.getElementById('loginUser').value;
     const p = document.getElementById('loginPass').value;
@@ -24,6 +31,7 @@ async function handleLogin() {
 
 
         teacherData = loginData;
+        localStorage.setItem('teacherId', loginData.id);
 
         const fullName = `${teacherData.first_name} ${teacherData.last_name}`;
         localStorage.setItem('teacherDisplayName', fullName);
@@ -39,10 +47,10 @@ async function handleLogin() {
 }
 
 async function loadAllClasses() {
-    const res = await fetch(`${API_URL}/get_all_classes`);
+    if (!teacherData) return; // Safety check
+    const res = await fetch(`${API_URL}/get_all_classes?teacher_id=${teacherData.id}`);
     const classes = await res.json();
     renderClassGrid(classes);
-    console.log("Database Response:", classes);
 }
 
 function renderClassGrid(classes) {
@@ -149,7 +157,8 @@ function switchTab(tab) {
 }
 
 async function fetchStudents(classCode) {
-    const res = await fetch(`${API_URL}/get_class_report/${classCode}`);
+    if (!teacherData) return;
+    const res = await fetch(`${API_URL}/get_class_report/${classCode}?teacher_id=${teacherData.id}`);
     const students = await res.json();
     const rewardRes = await fetch(`${API_URL}/get_class_rewards/${classCode}`);
     const rewards = await rewardRes.json();
@@ -182,7 +191,7 @@ async function doSearch() {
     const query = document.getElementById("globalSearch").value.trim();
     if (!query) return backToDashboard();
 
-    const res = await fetch(`${API_URL}/search_all_students?query=${encodeURIComponent(query)}`);
+    const res = await fetch(`${API_URL}/search_all_students?query=${encodeURIComponent(query)}&teacher_id=${teacherData.id}`);
     const data = await res.json();
 
     const classResultsDiv = document.getElementById('search-class-results');
